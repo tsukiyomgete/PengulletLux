@@ -41,6 +41,27 @@ public class StockageServeur {
         }
     }
 
+    public ServeurPalworld find(long idGuildServeur)
+    {
+        try
+        {
+            String json = Files.readString(fichier);
+            ServeurPalworld[] tabServ = gson.fromJson(json, ServeurPalworld[].class);
+            for(int i=0; i< tabServ.length; i++)
+            {
+                if(tabServ[i].getIdGuild() == idGuildServeur)
+                {
+                    return tabServ[i];
+                }
+            }
+            return null;
+
+        } catch(IOException e){
+            System.err.println("Erreur de chargement :" + e.getMessage());
+            return null;
+        }
+    }
+
     public void save(List<ServeurPalworld> listServ)
     {
         try {

@@ -35,5 +35,7 @@ build/
 ### VS Code ###
 .vscode/
 
+serveurs.json
+
 ### Mac OS ###
 .DS_Store
