@@ -6,6 +6,7 @@ public class ServeurPalworld {
     private int port;
     private String adminUser;
     private String adminPass;
+    private long idChannelText;
 
     ServeurPalworld(long idGuild,String host, int port, String adminUser, String adminPass)
     {
@@ -16,6 +17,15 @@ public class ServeurPalworld {
         this.adminPass = adminPass;
     }
 
+    public void setChannelText(long id)
+    {
+        idChannelText = id;
+    }
+
+    public long getIdChannel()
+    {
+        return idChannelText;
+    }
 
     public long getIdGuild()
     {

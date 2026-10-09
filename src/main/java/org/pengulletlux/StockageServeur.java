@@ -62,6 +62,8 @@ public class StockageServeur {
         }
     }
 
+
+
     public void save(List<ServeurPalworld> listServ)
     {
         try {

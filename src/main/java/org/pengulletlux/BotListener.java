@@ -19,12 +19,16 @@ public class BotListener extends ListenerAdapter {
 
     private List<ServeurPalworld> serveurs = new ArrayList<>();
     private StockageServeur stockage = new StockageServeur();
-    private TextChannel salon;
+    private ServeurPalworld servP;
+
+    public BotListener() {
+        serveurs.addAll(stockage.loadServList());
+        System.out.println(serveurs.size() + " serveurs ont été chargés !");
+    }
+
     @Override
     public void onReady(ReadyEvent event) {
         System.out.println("Connecté en tant que " + event.getJDA().getSelfUser().getName());
-        serveurs.addAll(stockage.loadServList());
-        System.out.println(serveurs.size() + " serveurs ont été chargés !");
     }
 
     public void onGuildReady(GuildReadyEvent event) {
@@ -41,17 +45,29 @@ public class BotListener extends ListenerAdapter {
                         .addOption(OptionType.CHANNEL, "channel", "Channel où la discussion entre le serveur Palworld et Discord communiquent", true)
                         .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.ADMINISTRATOR))
         ).queue();
+        // [MODIF] les 2 lignes de chargement ont été retirées d'ici (déplacées dans le constructeur)
+        for (ServeurPalworld s : serveurs) {
+            if (s.getIdGuild() == event.getGuild().getIdLong()) {
+                servP = s;
+                break;
+            }
+        }
     }
 
     public void onMessageReceived(MessageReceivedEvent event) {
         if (event.getAuthor().isBot()) return;
         String mess = event.getMessage().getContentRaw();
-        if(event.getChannel().equals(salon))
+
+        if(servP != null)
         {
-           //envoyer le message sur palworld
-            String pseudo = event.getAuthor().getName();
-            String messageEnv = "["+pseudo+"]"+": "+ mess;
-            System.out.println(messageEnv);
+            if(event.getChannel().getIdLong() == servP.getIdChannel())
+            {
+                ClientComm comm = new ClientComm(servP);
+                String pseudo = event.getAuthor().getName();
+                String messageEnv = "["+pseudo+"]"+": "+ mess;
+                System.out.println(messageEnv);
+                comm.sendMessageFromDiscord(messageEnv);
+            }
         }
     }
 
@@ -82,27 +98,42 @@ public class BotListener extends ListenerAdapter {
                     String ip  = event.getOption("ip").getAsString();
                     int port   = event.getOption("port").getAsInt();
                     long idGuild = event.getGuild().getIdLong();
+                    serveurs.removeIf(sp -> sp.getIdGuild() == idGuild);   // [MODIF] évite les doublons
                     serveurs.add(new ServeurPalworld(idGuild,ip,port,adminUser, adminPsw));
                     stockage.save(serveurs);
                     event.reply("le serveur a été mis en place").setEphemeral(true).queue();
                 }
                 break;
             }
-            case "setchannel" : {
-                if (!event.isFromGuild()) {
-                    event.reply("Commande utilisable uniquement sur un serveur").setEphemeral(true).queue(); return;
-                } else {
-                    if(stockage.find(event.getGuild().getIdLong())!= null)
-                    {
-                        salon = event.getChannel().asTextChannel();
-                        event.reply("Le salon a été assimilé au serveur").setEphemeral(true).queue();
+            case "setchannel": {
+                long idGuild = event.getGuild().getIdLong();
+
+
+                servP = null;
+                for (ServeurPalworld s : serveurs) {
+                    if (s.getIdGuild() == idGuild) {
+                        servP = s;
+                        break;
                     }
-                    event.reply("Le serveur n'a pas de salon assimilé").setEphemeral(true).queue();
                 }
+
+                if(servP == null)
+                {
+                    event.reply("Configure d'abord le serveur avec /setserveur").setEphemeral(true).queue();
+                    break;
+                }
+
+
+                TextChannel salon = event.getGuild().getTextChannelById(event.getChannel().getIdLong());
+                if (salon == null) {
+                    event.reply("Salon introuvable, refais /setchannel").setEphemeral(true).queue();
+                    return;
+                }
+                servP.setChannelText(salon.getIdLong());
+                stockage.save(serveurs);
+                event.reply("Ce salon est maintenant le salon du bot ").setEphemeral(true).queue();
                 break;
             }
-
-
             default: {
                 event.reply("Commande inconnue").setEphemeral(true).queue();
             }
