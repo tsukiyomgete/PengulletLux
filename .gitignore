@@ -36,6 +36,7 @@ build/
 .vscode/
 
 serveurs.json
+sftpServeur.json
 
 ### Mac OS ###
 .DS_Store
